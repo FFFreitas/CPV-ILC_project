@@ -1,0 +1,6 @@
+0D_fits
+500GeV_res
+1-loop
+feynrules
+*.pyc
+.ipynb_checkpoints

@@ -1,0 +1,909 @@
+(****************************************************************************************)
+(******      This is a FeynRules model for Higgs pseudo-observables (PO)           ******)
+(******       -- Intended to be used for Higgs decays & EW production only --      ******)
+(******      							                   ******)
+(******   Based on: Eur.Phys.J. C75 (2015) 3, 128. Instruction notes available.    ******)
+(******                                                                            ******)
+(******               Authors: A. Greljo,  D. Marzocca                             ******)
+(****************************************************************************************)
+
+
+
+(* ************************** *)
+(* *****  Information   ***** *)
+(* ************************** *)
+M$ModelName = "HPOprodMFV";
+
+M$Information = {
+  Authors      -> {"A.Greljo", "D. Marzocca"}, 
+  Version      -> "1.3",
+  Date         -> "14. 09. 2015",
+  Institutions -> {"University of Zurich"},
+  Emails       -> {"admir@physik.uzh.ch","marzocca@physik.uzh.ch"},
+  URLs         -> "http://www.physik.uzh.ch/data/HiggsPO/"
+};
+
+
+FeynmanGauge = False;
+
+(* ************************** *)
+(* *****  Gauge groups  ***** *)
+(* ************************** *)
+M$GaugeGroups = {
+  U1e  == { 
+    Abelian          -> True,  
+    CouplingConstant -> ee, 
+    GaugeBoson       -> A, 
+    Charge           -> Q
+  },
+  SU3C == { 
+    Abelian           -> False, 
+    CouplingConstant  -> gs, 
+    GaugeBoson        -> G,
+    StructureConstant -> f, 
+    Representations   -> {T,Colour}, 
+    SymmetricTensor   -> dSUN
+  } 
+};
+
+
+
+(* ************************** *)
+(* *****    Indices     ***** *)
+(* ************************** *)
+
+IndexRange[Index[Gluon     ]] = NoUnfold[Range[8]];
+IndexRange[Index[Colour    ]] = NoUnfold[Range[3]]; 
+IndexRange[Index[Generation]] = Range[3];
+
+IndexStyle[Gluon,      a];
+IndexStyle[Colour,     m];
+IndexStyle[Generation, f];
+
+
+
+(* ************************** *)
+(* *** Interaction orders *** *)
+(* ***  (as used by mg5)  *** *)
+(* ************************** *)
+
+M$InteractionOrderHierarchy = {
+  {QCD, 1},
+  {QED, 2},
+  {HPO, 3},
+  {YUK, 4}
+};
+
+
+
+(* ************************** *)
+(* **** Particle classes **** *)
+(* ************************** *)
+M$ClassesDescription = {
+
+(* Gauge bosons: physical vector fields *)
+  V[1] == { 
+    ClassName       -> A, 
+    SelfConjugate   -> True,  
+    Mass            -> 0,  
+    Width           -> 0,  
+    ParticleName    -> "a", 
+    PDG             -> 22, 
+    PropagatorLabel -> "a", 
+    PropagatorType  -> W, 
+    PropagatorArrow -> None,
+    FullName        -> "Photon"
+  },
+  V[2] == { 
+    ClassName       -> Z, 
+    SelfConjugate   -> True,
+    Mass            -> {MZ, 91.1876},
+    Width           -> {WZ, 2.4952},
+    ParticleName    -> "Z", 
+    PDG             -> 23, 
+    PropagatorLabel -> "Z",
+    PropagatorType  -> Sine,
+    PropagatorArrow -> None,
+    FullName        -> "Z"
+  },
+  V[3] == {
+    ClassName        -> W,
+    SelfConjugate    -> False,
+    Mass             -> {MW, 80.385},
+    Width            -> {WW, 2.085},
+    ParticleName     -> "W+",
+    AntiParticleName -> "W-",
+    QuantumNumbers   -> {Q -> 1},
+    PDG              -> 24, 
+    PropagatorLabel  -> "W",
+    PropagatorType   -> Sine,
+    PropagatorArrow  -> Forward,
+    FullName         -> "W"
+  },
+  V[4] == {
+    ClassName        -> G,
+    SelfConjugate    -> True,
+    Indices          -> {Index[Gluon]},
+    Mass             -> 0,
+    Width            -> 0,
+    ParticleName     -> "g", 
+    PDG              -> 21,
+    PropagatorLabel  -> "G",
+    PropagatorType   -> C,
+    PropagatorArrow  -> None,
+    FullName         -> "G"
+  },
+(* QCD ghosts *)
+  U[1] == { 
+    ClassName       -> ghG, 
+    SelfConjugate   -> False,
+    Indices         -> {Index[Gluon]},
+    Ghost           -> G,
+    PDG             -> 82,
+    QuantumNumbers  -> {GhostNumber -> 1}, 
+    Mass            -> 0,
+    Width	    -> 0,
+    PropagatorLabel -> "uG",
+    PropagatorType  -> GhostDash,
+    PropagatorArrow -> Forward
+  },
+(* Fermions: physical fields *)
+  F[1] == {
+    ClassName        -> vl,
+    ClassMembers     -> {ve,vm,vt},
+    Indices          -> {Index[Generation]},
+    FlavorIndex      -> Generation,
+    SelfConjugate    -> False,
+    Mass             -> 0,
+    Width            -> 0,
+    QuantumNumbers   -> {LeptonNumber -> 1},
+    PropagatorLabel  -> {"v", "ve", "vm", "vt"} ,
+    PropagatorType   -> S,
+    PropagatorArrow  -> Forward,
+    PDG              -> {12,14,16},
+    ParticleName     -> {"ve","vm","vt"},
+    AntiParticleName -> {"ve~","vm~","vt~"},
+    FullName         -> {"Electron-neutrino", "Mu-neutrino", "Tau-neutrino"}
+  },
+  F[2] == {
+    ClassName        -> l,
+    ClassMembers     -> {e, mu, ta},
+    Indices          -> {Index[Generation]},
+    FlavorIndex      -> Generation,
+    SelfConjugate    -> False,
+    Mass             -> {Ml, {Me,0}, {MMU,0}, {MTA,1.777}},
+    Width            -> 0,
+    QuantumNumbers   -> {Q -> -1, LeptonNumber -> 1},
+    PropagatorLabel  -> {"l", "e", "mu", "ta"},
+    PropagatorType   -> Straight,
+    PropagatorArrow  -> Forward,
+    PDG              -> {11, 13, 15},
+    ParticleName     -> {"e-", "mu-", "ta-"},
+    AntiParticleName -> {"e+", "mu+", "ta+"},
+    FullName         -> {"Electron", "Muon", "Tau"} 
+  },
+  F[3] == {
+    ClassName        -> uq,
+    ClassMembers     -> {u, c, t},
+    Indices          -> {Index[Generation], Index[Colour]},
+    FlavorIndex      -> Generation,
+    SelfConjugate    -> False,
+    Mass             -> {Mu, {MU, 0}, {MC,1.27}, {MT,172}},
+    Width            -> {0, 0, {WT,1.50833649}},
+    QuantumNumbers   -> {Q -> 2/3},
+    PropagatorLabel  -> {"uq", "u", "c", "t"},
+    PropagatorType   -> Straight,
+    PropagatorArrow  -> Forward,
+    PDG              -> {2, 4, 6}, 
+    ParticleName     -> {"u",  "c",  "t" },
+    AntiParticleName -> {"u~", "c~", "t~"},
+    FullName         -> {"u-quark", "c-quark", "t-quark"}
+  },
+  F[4] == {
+    ClassName        -> dq,
+    ClassMembers     -> {d, s, b},
+    Indices          -> {Index[Generation], Index[Colour]},
+    FlavorIndex      -> Generation,
+    SelfConjugate    -> False,
+    Mass             -> {Md, {MD,0}, {MS,0}, {MB,4.7}},
+    Width            -> 0,
+    QuantumNumbers   -> {Q -> -1/3},
+    PropagatorLabel  -> {"dq", "d", "s", "b"},
+    PropagatorType   -> Straight, 
+    PropagatorArrow  -> Forward,
+    PDG              -> {1,3,5},
+    ParticleName     -> {"d",  "s",  "b" },
+    AntiParticleName -> {"d~", "s~", "b~"},
+    FullName         -> {"d-quark", "s-quark", "b-quark"}
+  },
+(* Higgs: physical scalars  *)
+  S[1] == {
+    ClassName       -> H,
+    SelfConjugate   -> True,
+    Mass            -> {MH,125},
+    Width           -> {WH,0.00407},
+    PropagatorLabel -> "H",
+    PropagatorType  -> D,
+    PropagatorArrow -> None,
+    PDG             -> 25,
+    ParticleName    -> "H",
+    FullName        -> "H"
+  }
+};
+
+(* ************************** *)
+(* ***   Parameters       *** *)
+(* ************************** *)
+
+M$Parameters = {
+
+  (* External Input parameters *)
+
+  aEWM1 == { 
+    ParameterType    -> External, 
+    BlockName        -> SMPARAM, 
+    OrderBlock       -> 1, 
+    Value            -> 128.941,
+    InteractionOrder -> {QED,-2},
+    Description      -> "Inverse of the EW coupling constant at the Z pole"
+  },
+  vF == {
+    ParameterType    -> External,
+    BlockName        -> SMPARAM,
+    OrderBlock       -> 2,
+    Value            -> 246.22,
+    TeX              -> Subscript[v,F],
+    Description      -> "Higgs vev from Fermi constant"
+  },
+  aS    == { 
+    ParameterType    -> External,
+    BlockName        -> SMPARAM,
+    OrderBlock       -> 3,
+    Value            -> 0.119, 
+    InteractionOrder -> {QCD,2},
+    TeX              -> Subscript[\[Alpha],s],
+    Description      -> "Strong coupling constant at the Z pole"
+  },
+  cabi == {
+    ParameterType -> External,
+    BlockName     -> SMPARAM,
+    OrderBlock    -> 4,
+    Value         -> 0.2274,
+    TeX           -> Subscript[\[Theta], c],
+    Description   -> "Cabibbo angle"
+  },
+  
+  (* Internal SM parameters *)
+
+  aEW == {
+    ParameterType    -> Internal,
+    Value            -> 1/aEWM1,
+    InteractionOrder -> {QED,2},
+    TeX              -> Subscript[\[Alpha], EW],
+    Description      -> "Electroweak coupling contant"
+  },
+  ee == { 
+    ParameterType    -> Internal, 
+    Value            -> Sqrt[4 Pi aEW], 
+    InteractionOrder -> {QED,1}, 
+    TeX              -> e,  
+    Description      -> "Electric coupling constant"
+  },
+  gs == { 
+    ParameterType    -> Internal, 
+    Value            -> Sqrt[4 Pi aS],
+    InteractionOrder -> {QCD,1},  
+    TeX              -> Subscript[g,s], 
+    ParameterName    -> G,
+    Description      -> "Strong coupling constant at the Z pole"
+  },
+  noise == { 
+    ParameterType    -> Internal, 
+    Value            -> 1.23/12345678910,  
+    InteractionOrder -> {HPO, 1},
+    Description      -> "Numerical noise in order to get a 4-point vertex"
+  },
+
+  (* Higgs PO in the SM *)
+
+  eAASM == { 
+    ParameterType    -> External, 
+    BlockName        -> HPOSM, 
+    OrderBlock       -> 1, 
+    Value            -> 0.0038,
+    TeX              -> Subscript[\[Epsilon], \[Gamma] \[Gamma]], 
+    Description      -> "SM contribution to the eAA HPO"
+  },
+  eZASM == { 
+    ParameterType    -> External, 
+    BlockName        -> HPOSM, 
+    OrderBlock       -> 2, 
+    Value            -> 0.0069,
+    TeX              -> Subscript[\[Epsilon], Z \[Gamma]], 
+    Description      -> "SM contribution to the eZA HPO"
+  },
+  ybeff == {
+    ParameterType -> External,
+    BlockName     -> HPOSM,
+    OrderBlock    -> 3,
+    Value         -> 0.0177,
+    TeX              -> Superscript[Subscript[y, eff], b],
+    Description   -> "SM contribution to the yb HPO"
+  },
+  yceff == {
+    ParameterType -> External,
+    BlockName     -> HPOSM,
+    OrderBlock    -> 4,
+    Value         -> 0.00398,
+    TeX              -> Superscript[Subscript[y, eff], c],
+    Description   -> "SM contribution to the yc HPO"
+  },
+  ytaueff == {
+    ParameterType -> External,
+    BlockName     -> HPOSM,
+    OrderBlock    -> 5,
+    Value         -> 0.0102,
+    TeX              -> Superscript[Subscript[y, eff], \[Tau]],
+    Description   -> "SM contribution to the ytau HPO"
+  },
+  ymueff == {
+    ParameterType -> External,
+    BlockName     -> HPOSM,
+    OrderBlock    -> 6,
+    Value         -> 0.000599,
+    TeX           -> Superscript[Subscript[y, eff], \[Mu]],
+    Description   -> "SM contribution to the ymu HPO"
+  },
+  eggSM == { 
+    ParameterType -> External,
+    BlockName     -> HPOSM,
+    OrderBlock    -> 7, 
+    Value         -> -0.0065,  
+    InteractionOrder -> {QCD, 2},
+    TeX           -> Subscript[\[Epsilon], gg], 
+    Description      -> "SM 1-loop contribution to Higgs gluon gluon vertex"
+  },
+  (* Pseudo-Observables for Higgs decays to 4l, 2l + gamma, 2 gamma *)
+
+  kZZ == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 1, 
+    Value            -> 1,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Subscript[k, ZZ]
+  },
+  kWW == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 2, 
+    Value            -> 1,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Subscript[k, WW]
+  },
+  kAA == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 3, 
+    Value            -> 1,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Subscript[\[Epsilon], \[Gamma] \[Gamma]]
+  },
+  kZA == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 4, 
+    Value            -> 1,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Subscript[\[Epsilon], Z \[Gamma]]
+  },
+  eZZ == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 5,
+    Value            -> 0,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Subscript[\[Epsilon], ZZ]
+  },
+  eWW == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 6, 
+    Value            -> 0,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Subscript[\[Epsilon], WW]
+  },
+  lAACP == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 7, 
+    Value            -> 0,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Superscript[Subscript[\[Lambda], \[Gamma] \[Gamma]], CP]
+  },
+  lZACP == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 8, 
+    Value            -> 0,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Superscript[Subscript[\[Lambda], Z \[Gamma]], CP]
+  },
+  eZZCP == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 9,
+    Value            -> 0,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Superscript[Subscript[\[Epsilon], ZZ], CP]
+  },
+  eWWCP == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO4f, 
+    OrderBlock       -> 10, 
+    Value            -> 0,
+    InteractionOrder -> {HPO,1},
+    TeX              -> Superscript[Subscript[\[Epsilon], WW], CP]
+  },
+  eZeL == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 11,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], ZeL]
+  },
+  eZmuL == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 12,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], Z\[Mu]L]
+  },
+  eZtauL == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 13,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], Z\[Tau]L]
+  },
+  eZeR == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 14,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], ZeR]
+  },
+  eZmuR == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 15,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], Z\[Mu]R]
+  },
+  eZtauR == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 16,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], Z\[Tau]R]
+  },
+  eZv == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 17,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], Z\[Nu]]
+  },
+  eWe == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 18,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], We]
+  },
+  eWmu == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 19,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], W\[Mu]]
+  },
+  eWtau == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 20,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], W\[Tau]]
+  },
+  phiWe == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 21,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Phi], We]
+  },
+  phiWmu == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 22,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Phi], W \[Mu]]
+  },
+  phiWtau == {
+    ParameterType    -> External,
+    BlockName        -> HPO4f,
+    OrderBlock       -> 23,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Phi], W \[Tau]]
+  },
+  (* Pseudo-Observables for Quark contact terms *)
+  eZuL == {
+    ParameterType    -> External,
+    BlockName        -> HPOquark,
+    OrderBlock       -> 51,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], ZuL]
+  },
+  eZuR == {
+    ParameterType    -> External,
+    BlockName        -> HPOquark,
+    OrderBlock       -> 52,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], ZuR]
+  },
+  eZdL == {
+    ParameterType    -> External,
+    BlockName        -> HPOquark,
+    OrderBlock       -> 53,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], ZdL]
+  },
+  eZdR == {
+    ParameterType    -> External,
+    BlockName        -> HPOquark,
+    OrderBlock       -> 54,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], ZdR]
+  },
+  eWuL == {
+    ParameterType    -> External,
+    BlockName        -> HPOquark,
+    OrderBlock       -> 55,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Epsilon], WuL]
+  },
+  phiWuL == {
+    ParameterType    -> External,
+    BlockName        -> HPOquark,
+    OrderBlock       -> 56,
+    Value            -> 0,
+    InteractionOrder -> {HPO, 1},
+    TeX              -> Subscript[\[Phi], WuL]
+  },
+
+  (* Pseudo-Observables for CP-even Higgs decays to two fermions *)
+
+  kb == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO2f, 
+    OrderBlock       -> 1, 
+    Value            -> 1,
+    InteractionOrder -> {YUK, 1},
+    TeX              -> Subscript[k, b]
+  },
+  kc == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO2f, 
+    OrderBlock       -> 2, 
+    Value            -> 1,
+    InteractionOrder -> {YUK, 1},
+    TeX              -> Subscript[k, b]
+  },
+  ktau == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO2f, 
+    OrderBlock       -> 3, 
+    Value            -> 1,
+    InteractionOrder -> {YUK, 1},
+    TeX              -> Subscript[k, \[Tau]]
+  },
+  kmu == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO2f, 
+    OrderBlock       -> 4, 
+    Value            -> 1,
+    InteractionOrder -> {YUK, 1},
+    TeX              -> Subscript[k, \[Mu]]
+  },
+
+  (* Pseudo-Observables for CP-odd Higgs decays to two fermions *)
+  lb == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO2f, 
+    OrderBlock       -> 11, 
+    Value            -> 0,
+    InteractionOrder -> {YUK, 1},
+    TeX              -> Superscript[Subscript[\[Lambda], b], CP]
+  },
+  lc == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO2f, 
+    OrderBlock       -> 12, 
+    Value            -> 0,
+    InteractionOrder -> {YUK,1},
+    TeX              -> Superscript[Subscript[\[Lambda], c], CP]
+  },
+  ltau == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO2f, 
+    OrderBlock       -> 13, 
+    Value            -> 0,
+    InteractionOrder -> {YUK,1},
+    TeX              -> Superscript[Subscript[\[Lambda], \[Tau]], CP]
+  },
+  lmu == { 
+    ParameterType    -> External, 
+    BlockName        -> HPO2f, 
+    OrderBlock       -> 14, 
+    Value            -> 0,
+    InteractionOrder -> {YUK,1},
+    TeX              -> Superscript[Subscript[\[Lambda], \[Mu]], CP]
+  },
+
+  (* W and Z pole Pseudo-Observables *)
+
+  gZeL == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 1,
+    Value            -> -0.2696,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, ZeL]
+  },
+  gZmuL == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 2,
+    Value            -> -0.269,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, Z\[Mu]L]
+  },
+  gZtauL == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 3,
+    Value            -> -0.2693,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, Z\[Tau]L]
+  },
+  gZeR == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 4,
+    Value            -> 0.2315,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, ZeR]
+  },
+  gZmuR == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 5,
+    Value            -> 0.232,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, Z\[Mu]R]
+  },
+  gZtauR == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 6,
+    Value            -> 0.2327,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, Z\[Tau]R]
+  },
+  gZv == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 7,
+    Value            -> 0.500,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, Z\[Nu]]
+  },
+  gWe == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 8,
+    Value            -> 0.994,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, We]
+  },
+  gWmu == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 9,
+    Value            -> 0.991,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, W\[Mu]]
+  },
+  gWtau == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 10,
+    Value            -> 1.025,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, W\[Tau]]
+  },
+  gZuL == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 11,
+    Value            -> 0.3467,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, ZuL]
+  },
+  gZdL == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 12,
+    Value            -> -0.4243,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, ZdL]
+  },
+  gZuR == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 15,
+    Value            -> -0.1547,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, ZuR]
+  },
+  gZdR == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 16,
+    Value            -> 0.07735,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, ZdR]
+  },
+  gWuL == {
+    ParameterType    -> External,
+    BlockName        -> WZPole,
+    OrderBlock       -> 19,
+    Value            -> 1.0,
+    InteractionOrder -> {QED,1},
+    TeX              -> Subscript[g, WuL]
+  }
+};
+
+
+(* **************************************** *)
+(* ****    Kinetic terms Lagrangian    **** *)
+(* **************************************** *)
+
+LGaugeKin := Block[{muu,nu,aa}, 
+  - 1/4 FS[A,muu,nu] FS[A,muu,nu] - 1/4 FS[Z,muu,nu] FS[Z,muu,nu] - 1/2 (-del[W[muu], nu] + del[W[nu], muu])(-del[Wbar[muu], nu] + del[Wbar[nu], muu]) - 1/4 FS[G,muu,nu,aa] FS[G,muu,nu,aa] + MW^2 W[muu] Wbar[muu] + MZ^2 / 2 Z[muu] Z[muu]
+];
+
+
+LFermionsKin := Block[{muu}, 
+  I uqbar.Ga[muu].DC[uq, muu] + I dqbar.Ga[muu].DC[dq, muu] + I lbar.Ga[muu].DC[l, muu] + I vlbar.Ga[muu].DC[vl, muu] - MTA tabar.ta - MC cbar.c - MT tbar.t - MB bbar.b
+];
+
+LHiggsKin :=  Block[{muu},
+	1/2 del[H,muu] del[H,muu] -  MH^2 / 2 H^2
+];
+
+
+LQCDGhost := Block[{lagr, muu},
+	lagr = ExpandIndices[ - ghGbar.del[DC[ghG,muu],muu] ];
+	lagr
+];
+
+
+LBasic := LGaugeKin + LFermionsKin + LHiggsKin + LQCDGhost;
+
+(* ****************************************** *)
+(* ****    W and Z pole PO Lagrangian    **** *)
+(* ****                                  **** *)
+(* ****************************************** *)
+
+LWZpolePO := Block[{muu},
+    2 MZ / vF ( gZeL  ebar.Ga[muu].ProjM.e +
+		gZmuL mubar.Ga[muu].ProjM.mu +
+		gZtauL tabar.Ga[muu].ProjM.ta +
+		gZv ( vebar.Ga[muu].ProjM.ve +
+	   		  vmbar.Ga[muu].ProjM.vm +
+	   		  vtbar.Ga[muu].ProjM.vt ) +
+		gZeR ebar.Ga[muu].ProjP.e +
+		gZmuR mubar.Ga[muu].ProjP.mu +
+		gZtauR tabar.Ga[muu].ProjP.ta +
+		gZuL  ubar.Ga[muu].ProjM.u +
+		gZdL  dbar.Ga[muu].ProjM.d +
+		gZuL  cbar.Ga[muu].ProjM.c +
+		gZdL  sbar.Ga[muu].ProjM.s +
+		gZuR  ubar.Ga[muu].ProjP.u +
+		gZdR  dbar.Ga[muu].ProjP.d +
+		gZuR  cbar.Ga[muu].ProjP.c +
+		gZdR  sbar.Ga[muu].ProjP.s
+	 ) Z[muu] +
+	 Sqrt[2] MW / vF (gWe vebar.Ga[muu].ProjM.e W[muu] + Conjugate[gWe] ebar.Ga[muu].ProjM.ve Wbar[muu] ) +
+	 Sqrt[2] MW / vF (gWmu vmbar.Ga[muu].ProjM.mu W[muu] + Conjugate[gWmu] mubar.Ga[muu].ProjM.vm Wbar[muu] ) +
+	 Sqrt[2] MW / vF (gWtau vtbar.Ga[muu].ProjM.ta W[muu] + Conjugate[gWtau] tabar.Ga[muu].ProjM.vt Wbar[muu] ) +
+	 Sqrt[2] MW / vF (gWuL ubar.Ga[muu].ProjM.(Cos[cabi] d + Sin[cabi] s) W[muu] + Conjugate[gWuL] (Cos[cabi] dbar + Sin[cabi] sbar).Ga[muu].ProjM.u Wbar[muu] ) +
+	 Sqrt[2] MW / vF (gWuL cbar.Ga[muu].ProjM.(-Sin[cabi] d + Cos[cabi] s) W[muu] + Conjugate[gWuL] (-Sin[cabi] dbar + Cos[cabi] sbar).Ga[muu].ProjM.c Wbar[muu] )
+];
+
+(* *********************************** *)
+(* ****    Higgs PO Lagrangian    **** *)
+(* *********************************** *)
+
+LhVV := Block[{muu, nu, aa}, 
+	(kZZ+noise) MZ^2 Z[muu] Z[muu] H / vF + 
+	 2 (kWW+noise) MW^2 W[muu] Wbar[muu] H / vF
+	 - kAA eAASM FS[A,muu,nu] FS[A,muu,nu] H / (2 vF)
+	 - kZA eZASM FS[Z,muu,nu] FS[A,muu,nu] H / vF
+	 - eZZ FS[Z,muu,nu] FS[Z,muu,nu] H / (2 vF) 
+	 - eWW (-del[W[muu], nu] + del[W[nu], muu])(-del[Wbar[muu], nu] + del[Wbar[nu], muu]) H / vF 
+	 - eggSM FS[G,muu,nu,aa] FS[G,muu,nu,aa] H / (2 vF)
+];
+
+LhVVCP := Block[{muu, nu, rho, sigma}, 
+	- lAACP eAASM / (2 vF) (- Eps[muu,nu,rho,sigma]/2) FS[A,muu,nu] FS[A,rho,sigma] H -
+	 lZACP eZASM / vF (- Eps[muu,nu,rho,sigma]/2) FS[Z,muu,nu] FS[A,rho, sigma] H -
+	 eZZCP / (2 vF) (- Eps[muu,nu,rho,sigma]/2) FS[Z,muu,nu] FS[Z,rho, sigma] H - 
+	 eWWCP / vF (- Eps[muu,nu,rho,sigma]/2) ((-del[W[muu], nu] + del[W[nu], muu])(-del[Wbar[rho], sigma] +   del[Wbar[sigma], rho]) ) H
+];
+
+LCont := Block[{muu},
+     eZeL ebar.ProjM[muu].e Z[muu] 2 H / vF +
+	 eZmuL mubar.ProjM[muu].mu Z[muu] 2 H / vF +
+	 eZtauL tabar.ProjM[muu].ta Z[muu] 2 H / vF +
+	 eZeR ebar.ProjP[muu].e Z[muu] 2 H / vF +
+	 eZmuR mubar.ProjP[muu].mu Z[muu] 2 H / vF +
+	 eZtauR tabar.ProjP[muu].ta Z[muu] 2 H / vF +
+	 (eWe (Cos[phiWe] + I Sin[phiWe]) vebar.ProjM[muu].e W[muu] + eWe (Cos[phiWe] - I Sin[phiWe]) ebar.ProjM[muu].ve Wbar[muu] ) 2 H / vF +
+	 (eWmu (Cos[phiWmu] + I Sin[phiWmu]) vmbar.ProjM[muu].mu W[muu] + eWmu (Cos[phiWmu] - I Sin[phiWmu]) mubar.ProjM[muu].vm Wbar[muu] ) 2 H / vF +
+	 (eWtau (Cos[phiWtau] + I Sin[phiWtau]) vtbar.ProjM[muu].ta W[muu] + eWtau (Cos[phiWtau] - I Sin[phiWtau]) tabar.ProjM[muu].vt Wbar[muu] ) 2 H / vF +
+	 eZv (vebar.ProjM[muu].ve + vmbar.ProjM[muu].vm + vtbar.ProjM[muu].vt ) Z[muu] 2 H / vF
+];
+
+
+
+LContQuark := Block[{muu},
+     eZuL ubar.ProjM[muu].u Z[muu] 2 H / vF +
+	 eZuR ubar.ProjP[muu].u Z[muu] 2 H / vF +
+	 eZdL dbar.ProjM[muu].d Z[muu] 2 H / vF +
+	 eZdR dbar.ProjP[muu].d Z[muu] 2 H / vF +
+	 eZuL cbar.ProjM[muu].c Z[muu] 2 H / vF +
+	 eZuR cbar.ProjP[muu].c Z[muu] 2 H / vF +
+	 eZdL sbar.ProjM[muu].s Z[muu] 2 H / vF +
+	 eZdR sbar.ProjP[muu].s Z[muu] 2 H / vF +
+	 (eWuL (Cos[phiWuL] + I Sin[phiWuL]) ubar.Ga[muu].ProjM.(Cos[cabi] d + Sin[cabi] s) W[muu] + Conjugate[eWuL] (Cos[phiWuL] - I Sin[phiWuL]) (Cos[cabi] dbar + Sin[cabi] sbar).Ga[muu].ProjM.u Wbar[muu] ) 2 H / vF +
+	 (eWuL (Cos[phiWuL] + I Sin[phiWuL]) cbar.Ga[muu].ProjM.(Cos[cabi] s - Sin[cabi] d) W[muu] + Conjugate[eWuL] (Cos[phiWuL] - I Sin[phiWuL]) (Cos[cabi] sbar - Sin[cabi] dbar).Ga[muu].ProjM.c Wbar[muu] ) 2 H / vF
+];
+
+Lhff :=   (- ytaueff ktau tabar.ta  - yceff kc cbar.c  - ybeff kb bbar.b - ymueff kmu mubar.mu ) H / Sqrt[2] +
+		I (- ytaueff ltau tabar.Ga[5].ta  - yceff lc cbar.Ga[5].c  - lb ybeff bbar.Ga[5].b - lmu ymueff mubar.Ga[5].mu ) H / Sqrt[2];
+
+
+
+LHPO := LhVV + LhVVCP + LCont + Lhff + LContQuark;
+
+Ltot := LBasic  + LWZpolePO + LHPO;
